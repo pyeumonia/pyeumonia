@@ -19,6 +19,7 @@ class CovidException(Exception):
 class Covid19:
     """
     # Initialize the class
+    
     :param language: The language of the data, default is 'auto', check your language automatically.
     :param check_upgradable: While running the program it will check upgradable version, default is True.
     :param auto_update: If you want to update the program automatically, set it to True.
@@ -26,7 +27,11 @@ class Covid19:
     """
 
     def __init__(self, language='auto', check_upgradable=True, auto_update=False):
+        """
         # generate language from system language, only support Chinese and English.
+        
+        This function will check your system language and it will check for the latest version of the program automatically.
+        """
         if language == 'auto':
             language = locale.getdefaultlocale()[0]
         if language != 'zh_CN':
@@ -80,6 +85,7 @@ class Covid19:
         """
         # Get the region of the covid-19 data, in order to get the covid-19 data of the region.
 
+        This function is both supported in Chinese and English.
         :return: Your region.
         """
         url = 'https://ipinfo.io/json'
@@ -101,16 +107,19 @@ class Covid19:
                 'provinceName': 'Failed',
                 'cityName': 'Failed'
             }
-        for country in self.w_data:
+        w_data = self.w_data
+        c_data = self.c_data
+        for country in w_data: # Get the country name from covid-19 data.
             if countries.get(response['country']).alpha3 == country['countryShortCode']:
                 if self.language == 'zh_CN':
                     place['countryName'] = country['provinceName']
-                    if place['countryName'] == '中国':
-                        for province in self.c_data:
+                    if place['countryName'] == '中国':  # If you are in China, you will get the province name and city name.
+                        for province in c_data:
                             # Convert province name to Pinyin.
                             province_name = province['provinceShortName']
                             province_name_pinyin = ''.join(lazy_pinyin(province_name))
                             if province_name_pinyin == response['region'].lower():
+                                # print(province)
                                 place['provinceName'] = province_name
                                 for city in province['cities']:
                                     city_name = city['cityName']
@@ -131,7 +140,14 @@ class Covid19:
         :return: If there is a new version, return True, otherwise return False, if check failed, return 'Failed'.
         """
         # Get the version of the program.
-        version = os.popen('pip show pyeumonia').read().split('\n')[1].split(' ')[1]
+        version = os.popen('pip show pyeumonia').read()
+        try:
+            version = version.split('\n')[1].split(' ')[1]
+        except IndexError:
+            if self.language == 'zh_CN':
+                print('pyeumonia好像没有安装，请先安装后再次测试。')
+            else:
+                print('pyeumonia is not installed, please install it first.')
         # Get the latest version of the program.
         url = 'https://pypi.org/pypi/pyeumonia/json'
         try:
@@ -157,11 +173,17 @@ class Covid19:
                 print(f'You are using the latest version {version}!')
             return
         if self.auto_update:
-            os.system('pip install --upgrade pyeumonia')
+            is_update = os.system('pip install --upgrade pyeumonia')
             if self.language == 'zh_CN':
-                raise CovidException('pypi包已更新完成，请重新运行此程序。')
+                if is_update == 0:
+                    raise CovidException('pypi包已更新完成，请重新运行此程序。')
+                else:
+                    raise CovidException('pypi包更新失败，请检查网络连接。')
             else:
-                raise CovidException('pypi package has been updated, please restart this program.')
+                if is_update == 0:
+                    raise CovidException('pypi package has been updated, please restart this program.')
+                else:
+                    raise CovidException('pypi package update failed, please check your network connection.')
 
     def cn_covid_data(self):
         """
@@ -173,28 +195,23 @@ class Covid19:
         c_data = self.c_data
         data = []
         for province in c_data:
-            del province['provinceName']
-            del province['comment']
-            del province['locationId']
-            del province['statisticsData']
-            del province['highDangerCount']
-            del province['midDangerCount']
-            del province['suspectedCount']
-            del province['cities']
-            del province['dangerAreas']
-            del province['detectOrgCount']
-            del province['vaccinationOrgCount']
-            data.append(province)
+            province_data = {
+                'provinceShortName': province['provinceShortName'],
+                'currentConfirmedCount': province['currentConfirmedCount'],
+                'confirmedCount': province['confirmedCount'],
+                'curedCount': province['curedCount'],
+                'deadCount': province['deadCount'],
+            }
+            data.append(province_data)
         return data
 
-    def province_covid_data(self, province_name='北京', show_timeline: int = 0, include_cities=False, auto=False):
+    def province_covid_data(self, province_name='北京', show_timeline: int = 0, auto=False):
         """
         # Get the covid-19 data from China, for every province.
 
         This function is only supported in Chinese.
         :param province_name: The province you want to get the data, default is '北京'.
         :param show_timeline: If you want to get covid-19 data before ** days, please set the parameter to ** days.
-        :param include_cities: If you want to get the data of cities, please set the parameter to True.
         :param auto: If you want to get the data of province automatically, please set the parameter to True.
         :return: The data in json format.
         """
@@ -205,36 +222,26 @@ class Covid19:
         cities = []
         data = {}
         c_data = self.c_data
+        timeline_url = ''
         for province in c_data:
             if province['provinceName'] == province_name or province['provinceShortName'] == province_name:
-                del province['comment']
-                del province['locationId']
-                del province['provinceName']
-                if not show_timeline:
-                    del province['statisticsData']
-                del province['highDangerCount']
-                del province['midDangerCount']
-                del province['suspectedCount']
-                for city in province['cities']:
-                    ignore_cities = ['待明确地区', '境外输入', '外地来沪', '境外来沪', '境外输入人员', '外地来津', '外地来京', '省十里丰监狱', '省级（湖北输入）']
-                    if city['cityName'] not in ignore_cities:
-                        cities.append({'cityName': city['cityName'], 'confirmedCount': city['confirmedCount'],
-                                       'currentConfirmedCount': city['currentConfirmedCount'],
-                                       'deadCount': city['deadCount'], 'curedCount': city['curedCount']})
-                if not include_cities or show_timeline:
-                    del province['cities']
-                del province['dangerAreas']
-                del province['detectOrgCount']
-                del province['vaccinationOrgCount']
-                data = province
+                province_data = {
+                    'provinceShortName': province['provinceShortName'],
+                    'currentConfirmedCount': province['currentConfirmedCount'],
+                    'confirmedCount': province['confirmedCount'],
+                    'curedCount': province['curedCount'],
+                    'deadCount': province['deadCount']
+                }
+                # print(province)
+                data = province_data
+                timeline_url = province['statisticsData']
                 break
         if show_timeline:
             # print(data)
             t_data = []
-            timeline_url = str(data['statisticsData'])
             raw_timeline_data = requests.get(timeline_url).json()
             if raw_timeline_data['code'] != 'success':
-                raise CovidException(f'There is some error in the data, error code: {raw_timeline_data["code"]}.')
+                raise CovidException(f'获取疫情信息失败，错误代码：{raw_timeline_data["code"]}.')
             now = int(time.strftime('%Y%m%d', time.localtime()))
             # get the date of 30 days ago
             date = int(time.strftime('%Y%m%d', time.localtime(time.time() - show_timeline * 24 * 60 * 60)))
@@ -252,16 +259,11 @@ class Covid19:
                 t_data.append(timeline)
             timeline_data = {'provinceShortName': data['provinceShortName']}
             del data['provinceShortName']
-            del data['statisticsData']
             data['dateId'] = now
             t_data.append(data)
             timeline_data['data'] = t_data
-            if include_cities:
-                timeline_data['cities'] = cities
             return timeline_data
         else:
-            if include_cities:
-                data['cities'] = cities
             return data
 
     def city_covid_data(self, province_name='上海', city_name='杨浦区', auto=False, show_danger_areas=False):
@@ -295,10 +297,8 @@ class Covid19:
                             'deadCount': city['deadCount'],
                         }
                         if show_danger_areas:
-                            if city['highDangerCount'] > 0:
-                                city_data['highDangerCount'] = city['highDangerCount']
-                            if city['midDangerCount'] > 0:
-                                city_data['midDangerCount'] = city['midDangerCount']
+                            city_data['highDangerCount'] = city['highDangerCount']
+                            city_data['midDangerCount'] = city['midDangerCount']
                         return city
 
     def danger_areas_data(self, include_cities=True, include_counts=True, include_danger_areas=True):
@@ -485,7 +485,7 @@ class Covid19:
                 raise CovidException(f'There is some error in the data, error code: {raw_timeline_data["code"]}.')
             country_data = {'countryName': country_name}
             now = int(time.strftime('%Y%m%d', time.localtime()))
-            # get the date of 30 days ago
+            # get the date of several days ago
             date = int(time.strftime('%Y%m%d', time.localtime(time.time() - show_timeline * 24 * 60 * 60)))
             for timeline in raw_timeline_data['data']:
                 if timeline['dateId'] < date:
@@ -524,14 +524,11 @@ class Covid19:
             del news['articleId']
             del news['category']
             del news['jumpUrl']
-        print(raw_news)
+        return raw_news
 
 
 if __name__ == '__main__':
-    covid = Covid19(language='zh_CN', check_upgradable=False)
-    region = covid.city_covid_data(auto=True, show_danger_areas=True)
-    print(region)
-    # Check the internet connection while pyeumonia has been imported.
+    """While importing this module, your internet connection is required."""
     try:
         requests.get('https://ncov.dxy.cn/ncovh5/view/pneumonia')
     except Exception:

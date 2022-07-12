@@ -1,0 +1,6 @@
+build.py
+pyeumonia/__pycache__
+passphrase.pkl
+test.py
+dist
+setup.py
