@@ -1,6 +1,6 @@
 # Pyeumonia
 
-This program is in private beta, but it's open source, if there is some error(s) in your code, please submit an issue to [Github](https://github.com/pyeumonia/pyeumonia/issues).
+This program is in beta and open source, if there is some error(s) in your code, please submit an issue to [Github](https://github.com/pyeumonia/pyeumonia/issues).
 
 A covid-19 api to get the latest data from [DXY](https://ncov.dxy.cn/ncovh5/view/pneumonia).
 
@@ -21,15 +21,19 @@ pip install pyeumonia
 If you have already installed pyeumonia, and it's newer than `0.1.0a0`, it will automatically check for updates, you can also configure it by following the steps below to let it automatically update.
 
 ```python
-from pyeumonia.covid19 import Covid19
+from pyeumonia import Covid19
 
 covid = Covid19(check_upgradable=True, auto_update=True)
 ```
 
 If you don't want to check updates automatically, you can configure like this.
 
+
+> **Warning**:
+>- Don't use it on Jupyter Notebook, it may cause error!
+
 ```python
-from pyeumonia.covid19 import Covid19
+from pyeumonia import Covid19
 
 covid = Covid19(check_upgradable=False)
 ```
@@ -41,29 +45,19 @@ If you want to upgrade it manually, you can use `pip install --upgrade pyeumonia
 ### Get the latest data from the world:
 
 ```python
-from pyeumonia.covid19 import Covid19
+from pyeumonia import Covid19
 
 covid = Covid19(language='en_US')
 data = covid.world_covid_data()
 ```
 
-### Get timeline data from a country:
-
-```python
-from pyeumonia.covid19 import Covid19
-
-covid = Covid19(language='en_US')
-# Get covid-19 data from Japan in the last 30 days
-data = covid.country_covid_data(country_name='Japan', show_timeline=30)
-```
-
 ### Get timeline data from your country:
 ```python
-from pyeumonia.covid19 import Covid19
+from pyeumonia import Covid19
 
 covid = Covid19(language='en_US')
 # Get covid-19 data from your country in the last 30 days
-data = covid.country_covid_data(auto=True, show_timeline=30)
+data = covid.country_covid_data(country='auto', show_timeline=30)
 ```
 
 > **Warning**:
@@ -76,3 +70,4 @@ The project is open source and licensed under the [GNU GPL v3 license](https://w
 - You can use the project for your python projects.
 - You can modify and redistribute the project, but you must use GPLv3 license and keep the author's name in your source code.
 - For any purpose, this program is forbidden to use for commercial use, including but not limited to enterprise website, business application, business promotion.
+- For any purpose, as long as your program uses the pyeumonia package, no ads are allowed in the program, even if it is open source.

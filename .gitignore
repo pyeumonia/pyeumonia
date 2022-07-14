@@ -1,6 +1,10 @@
 build.py
 pyeumonia/__pycache__
-passphrase.pkl
-test.py
+pyeumonia.egg-info
+build
 dist
+passphrase.pkl
+test.ipynb
+.gitignore
+test.py
 setup.py

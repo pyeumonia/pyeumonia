@@ -1,3 +1,4 @@
+from unittest.mock import DEFAULT
 import requests  # Import requests module, which is used to send HTTP requests
 import json  # Import json module, which is used to parse JSON data
 from bs4 import BeautifulSoup  # Import beautifulsoup4 module, which is used to parse HTML data
@@ -7,14 +8,12 @@ import time  # Import time module, which is used to get current time.
 import os  # Import os module, which is used to check pypi upgradable
 from pypinyin import lazy_pinyin  # Import pypinyin module, get your place name in Chinese
 from iso3166 import countries  # Import iso3166 module, get your place name in English
-
-
 class CovidException(Exception):
     """While the wrong parameter is given, CovidException will be raised."""
 
-    def __init__(self, *args):
+    def __init__(self, *args): 
+        """While the wrong parameter is given, CovidException will be raised."""
         self.args = args
-
 
 class Covid19:
     """
@@ -32,10 +31,17 @@ class Covid19:
         
         This function will check your system language and it will check for the latest version of the program automatically.
         """
+        YELLOW = '\033[33m'
+        DEFAULT = '\033[0m'
         if language == 'auto':
             language = locale.getdefaultlocale()[0]
         if language != 'zh_CN':
             language = 'en_US'
+            print(YELLOW + 'Warning:' + DEFAULT + 'You are using an old method to import pyeumonia, it will be removed soon, please use `from pyeumonia import Covid19` instead.`')
+            print('New features will not be supported in the old method. From now on, it will only fix serious bugs.')
+        elif language == 'zh_CN':
+            print(YELLOW + '警告：' + DEFAULT + '您正在使用一个老旧的方法来导入pyeumonia，它将很快被删除，请使用`from pyeumonia import Covid19`来代替。')
+            print('该方法将不会再支持任何的新特性。从现在开始，只有在该方法中发现了严重的Bug，才会修复。')
         self.language = language
         if check_upgradable:
             self.auto_update = auto_update
@@ -205,17 +211,16 @@ class Covid19:
             data.append(province_data)
         return data
 
-    def province_covid_data(self, province_name='北京', show_timeline: int = 0, auto=False):
+    def province_covid_data(self, province_name='北京', show_timeline: int = 0):
         """
         # Get the covid-19 data from China, for every province.
 
         This function is only supported in Chinese.
-        :param province_name: The province you want to get the data, default is '北京'.
+        :param province_name: The province you want to get the data, default is '北京', if you want to get the data from your location, please set it to 'auto'.
         :param show_timeline: If you want to get covid-19 data before ** days, please set the parameter to ** days.
-        :param auto: If you want to get the data of province automatically, please set the parameter to True.
         :return: The data in json format.
         """
-        if auto:
+        if province_name == 'auto':
             place = self.get_region()
             if place['provinceName'] != 'Failed':
                 province_name = place['provinceName']
@@ -266,7 +271,7 @@ class Covid19:
         else:
             return data
 
-    def city_covid_data(self, province_name='上海', city_name='杨浦区', auto=False, show_danger_areas=False):
+    def city_covid_data(self, province_name='上海', city_name='杨浦区', show_danger_areas=False):
         """
         # Get covid-19 data from a city
 
@@ -276,10 +281,10 @@ class Covid19:
         :param show_danger_areas: If you want to get the danger areas count of the city,
         please set the parameter to True.
         :param province_name: The province you want to get the data, default is '上海'.
-        :param city_name: The city you want to get the data, default is '杨浦区'.
+        :param city_name: The city you want to get the data, default is '杨浦区', if you want to get the data from your location, please set it to 'auto'.
         :return: The data in json format.
         """
-        if auto:
+        if city_name == 'auto':
             place = self.get_region()
             if place['countryName'] != 'Failed':
                 province_name = place['provinceName']
@@ -301,17 +306,45 @@ class Covid19:
                             city_data['midDangerCount'] = city['midDangerCount']
                         return city
 
-    def danger_areas_data(self, include_cities=True, include_counts=True, include_danger_areas=True):
+    def danger_areas_data(self, include_cities=True, include_counts=True, include_danger_areas=True, province=None):
         """
         # Get the danger areas data from China.
 
         This function is only supported in Chinese.
         :param include_cities: Include the danger areas count for every city default.
         :param include_counts: Include the danger areas count default.
+        :param province: Danger areas you want to get, if you want to get danger areas from your location, please set it to 'auto'.
         :param include_danger_areas: Include high danger and middle danger areas default.
         """
-        if not include_cities and not include_counts and not include_danger_areas:
-            raise CovidException('Parameter include_cities, include_counts, include_danger_areas cannot be all False.')
+        auto_data = {
+            "provinceShortName": "",
+            "cityName": "",
+            "highDangerCount": 0,
+            "midDangerCount": 0,
+            "highDangerAreas": [],
+            "midDangerAreas": [],
+        }
+        if province is not None:
+            region = province if region != 'auto' else self.get_region()
+            region = self.get_region()
+            if region['cityName'] != 'Failed':
+                auto_data['cityName'] = region['cityName']
+                auto_data['provinceShortName'] = region['provinceName']
+                c_data = self.c_data
+                for province in c_data:
+                    if province['highDangerCount'] > 0 or province['midDangerCount'] > 0:
+                        if province['provinceShortName'] == auto_data['provinceShortName']:
+                            for area in province['dangerAreas']:
+                                if area['cityName'] == auto_data['cityName']:
+                                    if area['dangerLevel'] == 1:
+                                        auto_data['highDangerCount'] += 1
+                                        auto_data['highDangerAreas'].append(area['areaName'])
+                                    elif area['dangerLevel'] == 2:
+                                        auto_data['midDangerCount'] += 1
+                                        auto_data['midDangerAreas'].append(area['areaName'])
+                return auto_data
+        if not include_cities and not include_counts and not include_danger_areas and not auto:
+            raise CovidException('Parameter include_cities, include_counts, include_danger_areas and auto cannot be all False.')
         data = []
         merged_data = {
             'midDangerAreas': [],
