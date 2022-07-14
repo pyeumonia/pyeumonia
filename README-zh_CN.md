@@ -1,6 +1,6 @@
 # Pyeumonia
 
-本程序仍处于公测阶段并开源，如果你在你的代码中有任何错误，请在我的[GitHub](https://github.com/senge-studio/pyeumonia/issues)提交一个issue。
+本程序仍处于公测阶段并开源，如果你在你的代码中有任何错误，请在我的[GitHub](https://github.com/pyeumonia/pyeumonia/issues)提交一个issue。
 
 新冠肺炎疫情API，可以从[丁香园官网](https://ncov.dxy.cn/ncovh5/view/pneumonia)获取最新数据。
 
