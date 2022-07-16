@@ -1,17 +1,23 @@
 import requests  # Import requests module, which is used to send HTTP requests
 import json  # Import json module, which is used to parse JSON data
-from bs4 import BeautifulSoup  # Import beautifulsoup4 module, which is used to parse HTML data
+# Import beautifulsoup4 module, which is used to parse HTML data
+from bs4 import BeautifulSoup
 import platform  # Import platform module, which is used to get OS type
 import locale  # Import locale module, which is used to get system language
 import time  # Import time module, which is used to get current time.
 import os  # Import os module, which is used to check pypi upgradable
-from pypinyin import lazy_pinyin  # Import pypinyin module, get your place name in Chinese
-from iso3166 import countries  # Import iso3166 module, get your place name in English
-import webbrowser  # Import webbrowser module, it will open a browser to show the result.
+# Import pypinyin module, get your place name in Chinese
+from pypinyin import lazy_pinyin
+# Import iso3166 module, get your place name in English
+from iso3166 import countries
+# Import webbrowser module, it will open a browser to show the result.
+import webbrowser
+
+
 class CovidException(Exception):
     """While the wrong parameter is given, CovidException will be raised."""
 
-    def __init__(self, *args): 
+    def __init__(self, *args):
         """While the wrong parameter is given, CovidException will be raised."""
         self.args = args
 
@@ -19,7 +25,7 @@ class CovidException(Exception):
 class Covid19:
     """
     # Initialize the class
-    
+
     :param language: The language of the data, default is 'auto', check your language automatically.
     :param check_upgradable: While running the program it will check upgradable version, default is True.
     :param auto_update: If you want to update the program automatically, set it to True.
@@ -29,7 +35,7 @@ class Covid19:
     def __init__(self, language='auto', check_upgradable=True, auto_update=False):
         """
         # generate language from system language, only support Chinese and English.
-        
+
         This function will check your system language and it will check for the latest version of the program automatically.
         """
         if language == 'auto':
@@ -59,8 +65,10 @@ class Covid19:
         response.encoding = 'utf-8'
         status_code = response.status_code
         if status_code != 200:
-            raise CovidException(f'The website is not available, error code: {status_code}.')
-        soup = BeautifulSoup(response.text, 'html.parser')  # Initialize beautifulsoup4
+            raise CovidException(
+                f'The website is not available, error code: {status_code}.')
+        # Initialize beautifulsoup4
+        soup = BeautifulSoup(response.text, 'html.parser')
         # Get the covid-19 data from China.
         c_soup = soup.find('script', id='getAreaStat')
         self.c_data = json.loads(str(c_soup)
@@ -72,8 +80,8 @@ class Covid19:
         self.w_data = json.loads(str(w_soup)
                                  .strip(
             '<script id="getListByCountryTypeService2true">try { window.getListByCountryTypeService2true = ')
-                                 .strip('}catch(e){}</script>')
-                                 )
+            .strip('}catch(e){}</script>')
+        )
         # Get the news about covid-19 from China.
         n_soup = soup.find('script', id='getTimelineService1')
         self.n_data = json.loads(str(n_soup)
@@ -127,21 +135,24 @@ class Covid19:
             }
         w_data = self.w_data
         c_data = self.c_data
-        for country in w_data: # Get the country name from covid-19 data.
+        for country in w_data:  # Get the country name from covid-19 data.
             if countries.get(response['country']).alpha3 == country['countryShortCode']:
                 if language == 'zh_CN':
                     place['countryName'] = country['provinceName']
-                    if place['countryName'] == '中国':  # If you are in China, you will get the province name and city name.
+                    # If you are in China, you will get the province name and city name.
+                    if place['countryName'] == '中国':
                         for province in c_data:
                             # Convert province name to Pinyin.
                             province_name = province['provinceShortName']
-                            province_name_pinyin = ''.join(lazy_pinyin(province_name))
+                            province_name_pinyin = ''.join(
+                                lazy_pinyin(province_name))
                             if province_name_pinyin == response['region'].lower():
                                 # print(province)
                                 place['provinceName'] = province_name
                                 for city in province['cities']:
                                     city_name = city['cityName']
-                                    city_name_pinyin = ''.join(lazy_pinyin(city_name))
+                                    city_name_pinyin = ''.join(
+                                        lazy_pinyin(city_name))
                                     if city_name_pinyin == response['city'].lower():
                                         place['cityName'] = city_name
                                         break
@@ -174,7 +185,8 @@ class Covid19:
             if self.language == 'zh_CN':
                 print('检查更新失败，请前往 https://pypi.org/project/pyeumonia 查看更新。')
             else:
-                print('Check update failed, please visit https://pypi.org/project/pyeumonia to check update.')
+                print(
+                    'Check update failed, please visit https://pypi.org/project/pyeumonia to check update.')
             return
         latest_version = response['info']['version']
         if latest_version != version:
@@ -183,7 +195,8 @@ class Covid19:
                 print(f'您当前的版本是{version}，最新版本是{latest_version}')
             else:
                 print('New version is available, please update!')
-                print(f'Your version is {version}, the latest version is {latest_version}')
+                print(
+                    f'Your version is {version}, the latest version is {latest_version}')
         else:
             if self.language == 'zh_CN':
                 print(f'您当前安装的版本{version}为最新版！')
@@ -199,11 +212,13 @@ class Covid19:
                     raise CovidException('pypi包更新失败，请检查网络连接。')
             else:
                 if is_update == 0:
-                    raise CovidException('pypi package has been updated, please restart this program.')
+                    raise CovidException(
+                        'pypi package has been updated, please restart this program.')
                 else:
-                    raise CovidException('pypi package update failed, please check your network connection.')
+                    raise CovidException(
+                        'pypi package update failed, please check your network connection.')
 
-    def cn_covid_data(self):
+    def cn_covid_data(self, include_cities=False):
         """
         # Get the covid-19 data from China.
 
@@ -220,6 +235,22 @@ class Covid19:
                 'curedCount': province['curedCount'],
                 'deadCount': province['deadCount'],
             }
+            if include_cities:
+                cities = []
+                for city in province['cities']:
+                    ignore_cities = ['待明确地区', '境外输入', '外地来沪', '境外来沪',
+                                     '境外输入人员', '外地来津', '外地来京', '省十里丰监狱', '省级（湖北输入）']
+                    if city['cityName'] in ignore_cities:
+                        continue
+                    city_data = {
+                        'cityName': city['cityName'],
+                        'currentConfirmedCount': city['currentConfirmedCount'],
+                        'confirmedCount': city['confirmedCount'],
+                        'curedCount': city['curedCount'],
+                        'deadCount': city['deadCount'],
+                    }
+                    cities.append(city_data)
+                province_data['cities'] = cities
             data.append(province_data)
         return data
 
@@ -258,10 +289,12 @@ class Covid19:
             t_data = []
             raw_timeline_data = requests.get(timeline_url).json()
             if raw_timeline_data['code'] != 'success':
-                raise CovidException(f'获取疫情信息失败，错误代码：{raw_timeline_data["code"]}.')
+                raise CovidException(
+                    f'获取疫情信息失败，错误代码：{raw_timeline_data["code"]}.')
             now = int(time.strftime('%Y%m%d', time.localtime()))
             # get the date of 30 days ago
-            date = int(time.strftime('%Y%m%d', time.localtime(time.time() - show_timeline * 24 * 60 * 60)))
+            date = int(time.strftime('%Y%m%d', time.localtime(
+                time.time() - show_timeline * 24 * 60 * 60)))
             for timeline in raw_timeline_data['data']:
                 if timeline['dateId'] < date:  # get the data of 30 days ago
                     continue
@@ -316,7 +349,7 @@ class Covid19:
     def danger_areas_data(self, city_name=None):
         """
         # Get danger areas data from China.
-        
+
         This function is only supported in Chinese.
         :param city_name: The city you want to get danger areas, default is None, if you want to get danger areas in your city, please set it to 'auto'.
         :return: Return all danger areas if both province_name and city_name are None, else return danger areas from your province and your city.
@@ -563,11 +596,13 @@ class Covid19:
             raw_timeline_data = requests.get(url).json()
             country_name = country_raw_data['countryName']
             if raw_timeline_data['code'] != 'success':
-                raise CovidException(f'There is some error in the data, error code: {raw_timeline_data["code"]}.')
+                raise CovidException(
+                    f'There is some error in the data, error code: {raw_timeline_data["code"]}.')
             country_data = {'countryName': country_name}
             now = int(time.strftime('%Y%m%d', time.localtime()))
             # get the date of several days ago
-            date = int(time.strftime('%Y%m%d', time.localtime(time.time() - show_timeline * 24 * 60 * 60)))
+            date = int(time.strftime('%Y%m%d', time.localtime(
+                time.time() - show_timeline * 24 * 60 * 60)))
             for timeline in raw_timeline_data['data']:
                 if timeline['dateId'] < date:
                     continue
@@ -602,7 +637,8 @@ class Covid19:
         for news in n_data:
             del news['id']
             pub_timestamp = news['pubDate'] / 1000
-            pub_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(pub_timestamp))
+            pub_time = time.strftime(
+                '%Y-%m-%d %H:%M:%S', time.localtime(pub_timestamp))
             news['pubTime'] = pub_time
             del news['pubDateStr']
             del news['pubDate']
@@ -619,12 +655,12 @@ class Covid19:
                 if open_url:
                     webbrowser.open(news['sourceUrl'])
                 return local_news
-        
+
         return n_data
 
     def open_website(self, website='Official'):
         """# It will open a website in your computer.
-        
+
         :param website: Which website you want to open, default is official website.
         Usage:
         ```python
