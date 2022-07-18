@@ -250,6 +250,14 @@ class Covid19:
                         'deadCount': city['deadCount'],
                     }
                     cities.append(city_data)
+                if province['provinceShortName'] in ['香港', '澳门', '台湾']:
+                    cities = [{
+                        'cityName': province['provinceShortName'],
+                        'currentConfirmedCount': province['currentConfirmedCount'],
+                        'confirmedCount': province['confirmedCount'],
+                        'curedCount': province['curedCount'],
+                        'deadCount': province['deadCount']
+                    }]
                 province_data['cities'] = cities
             data.append(province_data)
         return data
